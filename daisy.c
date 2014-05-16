@@ -19,6 +19,7 @@ mongoc_collection_t *collection;
 mongoc_client_t *client = NULL;
 int errorCount = 0;
 bool stuck = false;
+map_t table = NULL;
 
 loc_t *populateEntry( bson_iter_t iter ) {
 	uint32_t len = 0;
@@ -129,6 +130,28 @@ map_t readRouteTable(int attemptNo ) {
 	mongoc_read_prefs_destroy(read_prefs);
 
 	return routeTable;
+}
+
+bool isStuck() { return stuck; }
+int errors() { return errorCount; }
+
+void reloadRouteTable() {
+	map_t prev = NULL;
+	prev = table;
+	table = readRouteTable(0);
+	if( table == NULL )
+		table = prev;
+	else if( prev != NULL )
+		hashmap_free_2(prev, free);
+}
+
+loc_t *lookup( char *path ) {
+	loc_t *t = NULL;
+	int ret = hashmap_get(table, path, (any_t) &t);
+	if( ret == MAP_OK )
+		return t;
+	else
+		return NULL;
 }
 
 void init(char *setName,char **repSet, int numInSet) {

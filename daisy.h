@@ -19,6 +19,9 @@ struct loc {
 typedef struct loc loc_t;
 
 void init( char *setName, char **repSet, int numInSet );
-map_t readRouteTable(int attemptNo);
+void reloadRouteTable();
+loc_t *lookup( char *path );
+bool isStuck();
+int errors();
 
 #endif /* DAISY_H_ */
