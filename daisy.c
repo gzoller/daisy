@@ -6,7 +6,6 @@
  */
 
 #include <mongoc.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <bson.h>
 
@@ -15,10 +14,17 @@
 char *_setName;
 char **_repSet;
 int  _numInSet;
+
+char dbName[64] = "daisy";
+char dbColl[64] = "table";
+
+#define CMD_DB   "db"
+#define CMD_CONN "conn"
+
 mongoc_collection_t *collection;
 mongoc_client_t *client = NULL;
 int errorCount = 0;
-bool stuck = false;
+int stuck = 0;
 map_t table = NULL;
 
 loc_t *populateEntry( bson_iter_t iter ) {
@@ -56,9 +62,10 @@ loc_t *populateEntry( bson_iter_t iter ) {
 // mongodb://127.0.0.1:9090,1.2.3.4:80?replicaSet=rs0
 mongoc_client_t *_getClient() {
 	bson_string_t *str;
+	int i = 0;
 
 	str = bson_string_new("mongodb://");
-	for( int i=0; i<_numInSet; i++ ) {
+	for( i=0; i<_numInSet; i++ ) {
 		if( i > 0 )
 			bson_string_append(str,",");
 		bson_string_append(str,_repSet[i]);
@@ -117,7 +124,7 @@ map_t readRouteTable(int attemptNo ) {
 	else {
 		errorCount++;
 		if( attemptNo == 7 ) {  // repeatedly try up to 7 times
-			stuck = true;
+			stuck = 1;
 			return NULL;  // Abandon ship!  We're stuck in a loop of fail.
 		}
 		client = NULL;
@@ -132,7 +139,7 @@ map_t readRouteTable(int attemptNo ) {
 	return routeTable;
 }
 
-bool isStuck() { return stuck; }
+int isStuck() { return stuck; }
 int errors() { return errorCount; }
 
 void reloadRouteTable() {
@@ -152,6 +159,11 @@ loc_t *lookup( char *path ) {
 		return t;
 	else
 		return NULL;
+}
+
+void setDB( u_char *db, u_char *coll ) {
+	strcpy(dbName, (char*)db);
+	strcpy(dbColl, (char*)coll);
 }
 
 void init(char *setName,char **repSet, int numInSet) {

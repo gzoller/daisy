@@ -390,7 +390,8 @@ void hashmap_free(map_t in){
 }
 
 extern void hashmap_free_2(map_t in, void (entryFree)(void *ptr)) {
-	for( int i=0; i< ((hashmap_map*)in)->table_size; i++) {
+	int i = 0;
+	for( i=0; i< ((hashmap_map*)in)->table_size; i++) {
 		hashmap_element z = ((hashmap_map*)in)->data[i];
 		entryFree( z.data );
 	}

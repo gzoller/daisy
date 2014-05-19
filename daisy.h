@@ -18,10 +18,15 @@ struct loc {
 };
 typedef struct loc loc_t;
 
+#define CMD_DB   "db"
+#define CMD_CONN "conn"
+
+void setDB( u_char *db, u_char *coll );
 void init( char *setName, char **repSet, int numInSet );
+
 void reloadRouteTable();
 loc_t *lookup( char *path );
-bool isStuck();
+int isStuck();
 int errors();
 
 #endif /* DAISY_H_ */
