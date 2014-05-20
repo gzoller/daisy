@@ -87,7 +87,7 @@ void _refreshConn() {
 		mongoc_client_destroy(client);
 	}
 	client = _getClient();
-	collection = mongoc_client_get_collection(client, "daisy", "table");
+	collection = mongoc_client_get_collection(client, dbName, dbColl);
 }
 
 map_t readRouteTable(int attemptNo ) {
@@ -115,11 +115,12 @@ map_t readRouteTable(int attemptNo ) {
 	err = mongoc_cursor_error(cursor, &error);
 	if( !err ) {
 		routeTable = hashmap_new();
-		do {
-			bson_iter_init( &iter, doc );
-			entry = populateEntry( iter );
-			hashmap_put( routeTable, entry->key, entry);
-		} while( mongoc_cursor_next(cursor, &doc) );
+		if( mongoc_cursor_more( cursor ))
+			do {
+				bson_iter_init( &iter, doc );
+				entry = populateEntry( iter );
+				hashmap_put( routeTable, entry->key, entry);
+			} while( mongoc_cursor_next(cursor, &doc) );
 	}
 	else {
 		errorCount++;
@@ -172,4 +173,5 @@ void init(char *setName,char **repSet, int numInSet) {
 	_repSet = repSet;
 	_numInSet = numInSet;
 	_refreshConn();
+	reloadRouteTable();
 }
