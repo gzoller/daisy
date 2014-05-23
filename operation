@@ -1,0 +1,15 @@
+
+	In:
+		http://my-wonderful-app.com/user/register?uid=fred  (owned domain)
+
+	Domain Resolves To:
+		http://elb.blah.blah.blah/acct_abc123/user/register?uid=fred  (owned domain)
+
+	Forward:
+		http://10.25.6.119:9000/acct_abc123/user/register?uid=fred
+
+
+	Convention:  <url>/<acct>/<module>/<req...>
+
+	NOTE: URL is *not* re-written--merely forwarded as-is.  We could strip off the acct_abc123
+	information, but that's extra work that's not needed.
