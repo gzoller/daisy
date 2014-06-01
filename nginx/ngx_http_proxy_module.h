@@ -57,7 +57,7 @@ typedef struct {
 #endif
 
     // Daisy support
-    void                            (*getDynamicURL)(ngx_str_t, int*, unsigned char*);
+    void                            (*getDynamicURL)(ngx_str_t, int*, unsigned char*, int);
 } ngx_http_proxy_loc_conf_t;
 
 #endif

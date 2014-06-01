@@ -609,7 +609,6 @@ static ngx_str_t  ngx_http_proxy_hide_headers[] = {
 #if (NGX_HTTP_CACHE)
 
 static ngx_keyval_t  ngx_http_proxy_cache_headers[] = {
-    { ngx_string("Host"), ngx_string("$proxy_host") },
     { ngx_string("Connection"), ngx_string("close") },
     { ngx_string("Content-Length"), ngx_string("$proxy_internal_body_length") },
     { ngx_string("Transfer-Encoding"), ngx_string("") },
@@ -967,6 +966,20 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
 
+    if( plcf->getDynamicURL != NULL ) {
+    	u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
+    	if (u->resolved == NULL) {
+        	return NGX_ERROR;
+    	}
+    	unsigned char *dynUrl = (unsigned char*) ngx_pnalloc(r->pool, 256); // sufficiently big for a 256-char max URL
+	int dynLen = 0;
+	plcf->getDynamicURL(r->uri, &dynLen, dynUrl, 0);
+        u->resolved->host.data = dynUrl;
+        u->resolved->host.len = dynLen;
+        u->resolved->port = 80;
+        u->resolved->no_port = 0;
+    }
+
     if (u->method.len) {
         /* HEAD was changed to GET to cache response */
         method = u->method;
@@ -1057,7 +1070,6 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         le.ip += sizeof(uintptr_t);
     }
 
-
     if (plcf->upstream.pass_request_headers) {
         part = &r->headers_in.headers.part;
         header = part->elts;
@@ -1107,10 +1119,25 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     if (plcf->proxy_lengths && ctx->vars.uri.len) {
         b->last = ngx_copy(b->last, ctx->vars.uri.data, ctx->vars.uri.len);
-
     } else if (unparsed_uri) {
+    	if( plcf->getDynamicURL != NULL ) {
+		//
+		// This works to strip off first 2 segments of URI path (e.g. account/module)
+		// These are purely used for routing and are not needed to pass down to the modules.
+		//
+		u_int zz = 0;
+		int count2 = 0;
+		while( zz < r->unparsed_uri.len && count2 < 3 ) {
+			if( r->unparsed_uri.data[zz] == '/' ) count2++;
+			zz++;
+		}
+		zz--;
+		if( count2 == 3 ) {
+			r->unparsed_uri.data = &(r->unparsed_uri.data[zz]);
+			r->unparsed_uri.len -= zz;
+		}
+	}
         b->last = ngx_copy(b->last, r->unparsed_uri.data, r->unparsed_uri.len);
-
     } else {
         if (r->valid_location) {
             b->last = ngx_copy(b->last, ctx->vars.uri.data, ctx->vars.uri.len);
@@ -1180,7 +1207,6 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     }
 
     b->last = e.pos;
-
 
     if (plcf->upstream.pass_request_headers) {
         part = &r->headers_in.headers.part;
@@ -1967,7 +1993,6 @@ ngx_http_proxy_finalize_request(ngx_http_request_t *r, ngx_int_t rc)
     return;
 }
 
-
 static ngx_int_t
 ngx_http_proxy_host_variable(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
@@ -1992,7 +2017,7 @@ ngx_http_proxy_host_variable(ngx_http_request_t *r,
 	// If Daisy has given us a dynamic url facility--use it!
     	unsigned char *url = (unsigned char*) ngx_pnalloc(r->pool, 256); // sufficiently big for a 256-char max URL
 	int len = 0;
-	plcf->getDynamicURL(r->uri, &len, url);
+	plcf->getDynamicURL(r->uri, &len, url, 1);
 	v->len = len;
     	v->data = url;
     }

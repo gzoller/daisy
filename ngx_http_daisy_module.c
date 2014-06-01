@@ -9,6 +9,8 @@
 #include <string.h>
 #include "daisy.h"
 
+#define RELOAD_PATH "/daisy/test"
+
 	static char* ngx_http_daisy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 	extern ngx_module_t  ngx_http_proxy_module;
@@ -57,7 +59,7 @@
 	};
 
  	void
-	getDynamicURL(ngx_str_t uri, int *len, unsigned char *urlBuf){
+	getDynamicURL(ngx_str_t uri, int *len, unsigned char *urlBuf, int incPtr){
 		loc_t *loc = NULL;
 
 		int scan = 0;
@@ -70,16 +72,21 @@
 			scan--;
 			uri.data[scan] = '\0';
 			loc = lookup( (char*) uri.data );
+			
+			// Reload table?
+			if( !strcmp( (char*)uri.data, RELOAD_PATH ) )
+				reloadRouteTable();
+
 			uri.data[scan] = '/';
 			if( loc != NULL ) {
 				strcpy((char*)urlBuf, loc->ipFwd[loc->idx]);
 				*len = strlen( (char*)urlBuf );
-				//uri.data = &uri.data[scan];
-				//uri.len = uri.len - scan;
 	
 				// rotate the pointer
-				loc->idx += 1;
-				if( loc->idx == loc->fwdCount ) loc->idx = 0;
+				if( incPtr ) {
+					loc->idx += 1;
+					if( loc->idx == loc->fwdCount ) loc->idx = 0;
+				}
 			}
 		}
 	}
