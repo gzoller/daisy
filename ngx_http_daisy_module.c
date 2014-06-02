@@ -58,9 +58,10 @@
 	    NGX_MODULE_V1_PADDING
 	};
 
- 	void
+ 	int
 	getDynamicURL(ngx_str_t uri, int *len, unsigned char *urlBuf, int incPtr){
 		loc_t *loc = NULL;
+		int port = 80;
 
 		int scan = 0;
 		int count = 0;
@@ -79,8 +80,13 @@
 
 			uri.data[scan] = '/';
 			if( loc != NULL ) {
-				strcpy((char*)urlBuf, loc->ipFwd[loc->idx]);
-				*len = strlen( (char*)urlBuf );
+				*len = 0;
+				while( loc->ipFwd[loc->idx][*len] != '\0' && loc->ipFwd[loc->idx][*len] != ':' ) {
+					urlBuf[*len] = loc->ipFwd[loc->idx][*len];
+					(*len)++;
+				}
+				if( loc->ipFwd[loc->idx][*len] == ':' )
+					port = atoi( &loc->ipFwd[loc->idx][*len+1] );
 	
 				// rotate the pointer
 				if( incPtr ) {
@@ -89,6 +95,7 @@
 				}
 			}
 		}
+		return port;
 	}
 
 	static char *

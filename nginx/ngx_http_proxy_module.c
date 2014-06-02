@@ -973,10 +973,10 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     	}
     	unsigned char *dynUrl = (unsigned char*) ngx_pnalloc(r->pool, 256); // sufficiently big for a 256-char max URL
 	int dynLen = 0;
-	plcf->getDynamicURL(r->uri, &dynLen, dynUrl, 0);
+	int port = plcf->getDynamicURL(r->uri, &dynLen, dynUrl, 0);
         u->resolved->host.data = dynUrl;
         u->resolved->host.len = dynLen;
-        u->resolved->port = 80;
+        u->resolved->port = port;
         u->resolved->no_port = 0;
     }
 
